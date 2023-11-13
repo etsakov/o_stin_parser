@@ -24,7 +24,7 @@ def parse_vk_api_wall(number_of_posts):
 			'v': VERSION,
 			'domain': str("ostin"),
 			'count': number_of_posts,
-			'offset': 100,
+			'offset': 0,
 			'filter': str("owner")
 			})
 	data = response.json()['response']['items']
@@ -123,6 +123,7 @@ def put_comments_data_to_db(post_id, owner_id, database_name):
 	for user in comm_profiles:
 		cur.execute('''INSERT OR IGNORE INTO Users (user_id, first_name, last_name)
 			VALUES ( ?, ?, ?)''', (user['id'], user['first_name'], user['last_name']))
+		conn.commit()
 
 	# Put all first-level comments into the database
 	for comment in comm_items:
@@ -132,6 +133,7 @@ def put_comments_data_to_db(post_id, owner_id, database_name):
 				replies_count=excluded.replies_count;
 			''', (comment['id'], post_id, comment['from_id'], datetime.fromtimestamp(comment['date']), comment['text'], 
 				comment['likes']['count'], comment['thread']['count']))
+		conn.commit()
 
 		# Put all replies into the database
 		if comment['thread']['count'] > 0:
@@ -142,6 +144,7 @@ def put_comments_data_to_db(post_id, owner_id, database_name):
 			for user in reply_profiles:
 				cur.execute('''INSERT OR IGNORE INTO Users (user_id, first_name, last_name)
 					VALUES ( ?, ?, ?)''', (user['id'], user['first_name'], user['last_name']))
+				conn.commit()
 
 			for reply in reply_items:
 				# Remove irrelevant part from comment
@@ -155,8 +158,9 @@ def put_comments_data_to_db(post_id, owner_id, database_name):
 						like_count=excluded.like_count;
 					''', (reply['id'], post_id, reply['from_id'], datetime.fromtimestamp(reply['date']), reply_content, 
 						reply['likes']['count'], comment['id']))
+				conn.commit()
 
-	conn.commit()
+	
 	cur.close()
 
 
