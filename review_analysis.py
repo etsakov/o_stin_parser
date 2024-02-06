@@ -33,6 +33,10 @@ def analyse_sentiments(text):
 	https://realpython.com/python-nltk-sentiment-analysis/
 	'''
 
+	text = re.sub('http[s]?://\S+', '', text)
+	text = text.strip()
+
+
 	text = translate_ru_en(text)
 	# Tensorflow token doesn't take texts longer then 128 characters... So we need to shorten this
 	if len(text) > 128:
@@ -81,9 +85,9 @@ def discover_emojis(comm_text):
 
 
 
-def update_db_with_sentiment(db_name):
+def update_db_with_sentiment():
 	# Connects to the database, gets all the comments and conducts the sentiment analysis
-	conn = SQL.connect(db_name)
+	conn = SQL.connect("main_db.sqlite")
 	cur = conn.cursor()
 
 	cur.execute('SELECT comment_id, content, sentiment FROM Comments WHERE sentiment IS NULL')
@@ -98,9 +102,8 @@ def update_db_with_sentiment(db_name):
 		comm_id = comment[0]
 		comm_text = comment[1]
 
-		emoji_sentiment = discover_emojis(comm_text)
-
 		try:
+			emoji_sentiment = discover_emojis(comm_text)
 			processed_comment = analyse_sentiments(comm_text)
 			comm_sentiment = processed_comment[0]
 			comm_confidence = processed_comment[1]
@@ -124,11 +127,12 @@ def update_db_with_sentiment(db_name):
 			conn.commit()
 			res_message = "\t>>> YOUR COMMENTS DATABASE HAS BEEN UPDATED WITH SEMANTICS <<<"
 
-		except (KeyError, IndexError):
+		except:
+		# except (KeyError, IndexError):
 			conn.commit()
 			res_message = "\t\t>>> !!! DATA UPDATE RESULTED AN ERROR !!! <<<"
 			print(res_message)
-			break 
+			continue 
 
 	conn.commit()
 	cur.close()
@@ -136,6 +140,6 @@ def update_db_with_sentiment(db_name):
 	print("\n"*30, res_message)
 
 
-if __name__ == "__main__":
-	update_db_with_sentiment("main_db.sqlite")
+# if __name__ == "__main__":
+# 	update_db_with_sentiment()
 

@@ -15,20 +15,28 @@ VERSION = lines[2].split('=')[1]
 DOMAIN = "ostin"
 
 
-def parse_vk_api_wall():
-	# Gets 100 reviews dump from VK database
+def parse_vk_api_wall(number_of_posts):
+	# HISTORICAL PARSING - to parse 1000 posts
 
-	response = requests.get('https://api.vk.com/method/wall.get', 
-		params={
+	offset = 0
+	step_size = 100
+	all_data = []
+	while offset <= number_of_posts:
+		response = requests.get('https://api.vk.com/method/wall.get', 
+			params={
 			'access_token': TOKEN,
 			'v': VERSION,
 			'domain': str("ostin"),
-			'count': 100,
-			'offset': 0,
+			'count': step_size,
+			'offset': offset,
 			'filter': str("owner")
 			})
-	data = response.json()['response']['items']
-	return data
+		data = response.json()['response']['items']
+		all_data.extend(data)
+		offset += step_size
+		time.sleep(0.2)
+
+	return all_data
 
 
 def parse_vk_comments(*args):
@@ -179,7 +187,7 @@ def get_comments_and_users(parsed_data, database_name):
 	# Extracts comments, replies and users from parsed data
 
 	for num, post_json in enumerate(parsed_data):
-		print("\n"*30, "\t\t>>> {}% POSTS PROCESSED <<<".format(int(num/len(parsed_data)*100)))
+		print("\n"*30, "\t\t>>> {}% OUT OF {} POSTS PROCESSED <<<".format(int(num/len(parsed_data)*100), len(parsed_data)))
 		if post_json['comments']['count'] > 0:
 			try:
 				put_post_to_db(post_json, database_name)
@@ -194,25 +202,5 @@ def main_routine():
 	# Launches main scripted routine from the outside
 	db_name = "main_db"
 	create_db(db_name)
-	posts_data = parse_vk_api_wall()
+	posts_data = parse_vk_api_wall(1500)
 	get_comments_and_users(posts_data, db_name)
-
-# if __name__=="__main__":
-# 	# MAIN STREAM
-# 	db_name = "main_db"
-# 	create_db(db_name)
-# 	posts_data = parse_vk_api_wall(100)
-# 	get_comments_and_users(posts_data, db_name)
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -4,6 +4,8 @@ import sqlite3 as SQL
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+# NB: Obviously VK API allows to execute group data parsing in respect to the users. My current algorythm parses each user one by one.
+# This is inefficinet. Needs refactoring on a later stage to make it capable of parsing the entire dataset with all users' info.
 
 with open("creds.txt") as creds:
 	lines = [line.rstrip() for line in creds]
@@ -28,13 +30,15 @@ def parse_user_data(user_id):
 
 	return data
 
-def update_db_with_user_data(database_name):
+
+def update_db_with_user_data():
 	# Updates the database with users' basic info
 
-	conn = SQL.connect(database_name + ".sqlite")
+	conn = SQL.connect("main_db.sqlite")
 	cur = conn.cursor()
 
-	cur.execute('SELECT user_id, city, country, gender, age FROM Users WHERE gender IS NULL OR city IS NULL')
+	# cur.execute('SELECT user_id, city, country, gender, age FROM Users WHERE gender IS NULL')
+	cur.execute('SELECT user_id, city, country, gender, age FROM Users')
 	comments_without_sentiments = cur.fetchall()
 
 	for num, row in enumerate(comments_without_sentiments):
@@ -66,7 +70,7 @@ def update_db_with_user_data(database_name):
 					cur.execute('UPDATE Users SET age = ? WHERE user_id = ?', (customer_age, user_id))
 
 		except (IndexError, KeyError, ConnectionResetError):
-			time.sleep(3)
+			time.sleep(10)
 			continue
 
 		print("\n"*30, "\t\t>>> {}% USERS PROCESSED <<<".format(int(num/len(comments_without_sentiments)*100)))
@@ -77,8 +81,8 @@ def update_db_with_user_data(database_name):
 
 	print("\n"*30, "\t\t>>> YOUR USER DATABASE HAS BEEN UPDATED <<<")
 
-if __name__ == "__main__":
-	update_db_with_user_data("main_db")
+# if __name__ == "__main__":
+# 	update_db_with_user_data()
 
 
 
